@@ -6,20 +6,22 @@
 const int xPin = A0;
 const int yPin = A1;
 
-const int minThreshold = 200;
-const int maxThreshold = 600;
-const int blinkIntervalStaying = 3000;
-const int moveInterval = 100;
-const int generateIntervalKiller = 15000; 
-const int generateIntervalWall = 15000;  
-const int powerDuration = 5000; 
-const int powerChangeColorInterval = 5000; 
-
-const byte matrixSize = 8; 
-const byte maximumKillerSpeed = 60;
-const byte maximumNumberOfKillers = 10;
-const byte matrixBigSize = 16;
-const byte maximumNumberOfWalls = 100;
+#define minThreshold 200
+#define maxThreshold 600
+#define blinkIntervalStaying 3000
+#define moveInterval 100
+#define generateIntervalKiller 15000 
+#define generateIntervalWall 15000  
+#define powerDuration 5000 
+#define powerChangeColorInterval 5000 
+#define matrixSize 8 
+#define maximumKillerSpeed 60
+#define maximumNumberOfKillers 10
+#define matrixBigSize 24
+#define maximumNumberOfWalls 100
+#define buzzerPin 7
+#define eatSound 3000
+#define dieSound 100
 
 byte xApple = 0;
 byte yApple = 0; 
@@ -33,6 +35,7 @@ byte xEndDisplay = matrixSize - 1;
 byte yStartDisplay = 0;
 byte yEndDisplay = matrixSize - 1;
 byte numberOfPowers = 2; 
+byte numberOfLifes = 2; 
 
 unsigned int long long lastKillerUpdateTime = 0;
 unsigned int long long lastKillerGenerateTime = 0;
@@ -42,12 +45,14 @@ unsigned int long long lastMoved = 0;
 unsigned int long long lastWallGeneratedTime = 0; 
 unsigned int long long startPowerTime = 0; 
 unsigned int long long lastColorPowerChange = 0;
+unsigned int long long whenStartedGame = 0;
 
-int numberOfKillers = 0;
-int stayedSeconds = 0; 
-int collectedApples = 0;
-int numberOfWalls = 0;
+byte numberOfKillers = 0;
+byte stayedSeconds = 0; 
+byte collectedApples = 0;
+byte numberOfWalls = 0;
 int score = 0;
+int prevScore = 0; 
 
 bool toGenerateKiller = false;
 bool toUpdateApple = false;
@@ -59,42 +64,39 @@ bool atSelectName = false;
 
 struct {
   byte x; 
-  byte y; 
+  byte y;   
 } killers[maximumNumberOfKillers], walls[maximumNumberOfWalls];
 
-bool matrix[matrixBigSize][matrixBigSize] = {
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  //{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0, 0, 0, 0, 0, 0, 0, 0}
-};
+long matrix[24] = {0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 
+                   0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 
+                   0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll, 0ll}; 
+
+void change(byte x, byte y, byte what) {
+  if ((matrix[x] & (1ll << y)) == 0 && what == 0) {
+    return;  
+  }
+
+  if ((matrix[x] & (1ll << y)) != 0 && what == 1) {
+    return;  
+  }
+
+  if ((matrix[x] & (1ll << y)) == 0) {
+    matrix[x] += (1ll << y);  
+    return;
+  }
+
+  if ((matrix[x] & (1ll << y)) != 0) {
+    matrix[x] -= (1ll << y);
+    return; 
+  }
+}
 
 //------------------------------------------------------------------------------------------------------------------
 
 //-UTILS------------------------------------------------------------------------------------------------------------
 
-bool checkNotObstacle(int x, int y) {
-  for (int i = 0; i < numberOfWalls; ++i) {
+bool checkNotObstacle(byte x, byte y) {
+  for (byte i = 0; i < numberOfWalls; ++i) {
     if (walls[i].x == x && walls[i].y == y) {
       return false;
     }
@@ -102,110 +104,6 @@ bool checkNotObstacle(int x, int y) {
   return x > 0 && x < matrixBigSize - 1 && y > 0 && y < matrixBigSize - 1; 
 }
 
-//------------------------------------------------------------------------------------------------------------------
-
-//-KILLER CLASS-----------------------------------------------------------------------------------------------------
-
-class Killer {
-  public: 
-  
-  int killerDistance() {
-    // aici am nevoie de o functie f(x) cu x din millis() care da valori de la 5 la 1 
-    // cam naspa de facut, deci hardcodez functia dupa bunul plac 
-    if (millis() <= 60000) {
-      return 5; 
-    }
-    else if (millis() <= 100000) {
-      return 4; 
-    }
-    else if (millis() <= 200000) {
-      return 3; 
-    }
-    else if (millis() <= 1000000) {
-      return 2; 
-    }
-    else {
-      return 1; 
-    }
-  }
-
-  void tryGenerateKiller() {
-    int xNewKiller = xNewKiller = random(matrixBigSize - 2) + 1;
-    int yNewKiller = yNewKiller = random(matrixBigSize - 2) + 1;
-  
-    if (xNewKiller == xApple && yNewKiller == yApple) {
-      return;
-    } 
-  
-    if (abs(xNewKiller - xPos) + abs(yNewKiller -  yPos) < killerDistance()) {
-      return; 
-    }
-  
-    for (int i = 0; i < numberOfKillers; ++i) {
-      if (xNewKiller == killers[i].x && yNewKiller == killers[i].y) {
-        return; 
-      }
-    }
-  
-    if (checkNotObstacle(xNewKiller, yNewKiller) == false) {
-      return;
-    }
-  
-    ++numberOfKillers; 
-  
-    killers[numberOfKillers - 1].x = xNewKiller;
-    killers[numberOfKillers - 1].y = yNewKiller;
-  
-    matrix[xNewKiller][yNewKiller] = 1; 
-  
-    toGenerateKiller = false; 
-  
-    lastKillerGenerateTime = millis();
-  }
-
-  void blinkKillers() {
-    if (millis() % 500 < 50) {
-      for (int i = 0; i < numberOfKillers; ++i) {
-        matrix[killers[i].x][killers[i].y] = 0; 
-      }
-    }
-    else {
-      for (int i = 0; i < numberOfKillers; ++i) {
-        matrix[killers[i].x][killers[i].y] = 1; 
-      }
-    }
-  }
-
-  void updateKillers() {
-    for (int i = 0; i < numberOfKillers; ++i) {
-      int directionOx = random(3) - 1;
-      int directionOy = random(3) - 1;
-  
-      int xNewKiller = killers[i].x + directionOx; 
-      int yNewKiller = killers[i].y + directionOy; 
-  
-      if (checkNotObstacle(xNewKiller, yNewKiller) == true && !(xNewKiller == xApple && yNewKiller == yApple)) {
-        matrix[xNewKiller][yNewKiller] = 1;
-        matrix[killers[i].x][killers[i].y] = 0; 
-        killers[i].x = xNewKiller; 
-        killers[i].y = yNewKiller;
-        if (killers[i].x == xPos && killers[i].y == yPos) {
-          endedGame = true; 
-        }
-      }
-    }
-  }
-
-  void checkIfNeedUpdateKillers() {
-    int speedKiller = min(millis() / 20000 + 1, maximumKillerSpeed); 
-  
-    if (millis() - lastKillerUpdateTime > (120 - speedKiller) * 10) {
-      updateKillers();
-      lastKillerUpdateTime = millis();
-    }
-  }
-
-} killerObject;
 
 //------------------------------------------------------------------------------------------------------------------
 
@@ -214,24 +112,25 @@ class Killer {
 class Apple {
   public:
 
-  int appleLedDistance() {
-    int dist = abs(xApple - xPos) + abs(yApple - yPos);
-    return 250 / 31 * (31 - dist);
+  byte appleLedDistance() {
+    // these are not magic numbers, 42 = 21 + 21, biggest distance between apple and player
+    byte dist = abs(xApple - xPos) + abs(yApple - yPos);
+    return 250 / 42 * (42 - dist);
   }
   
   void blinkApple() {
     if (millis() % 100 < 60) {
-      matrix[xApple][yApple] = 0; 
+      change(xApple, yApple, 0);
     }
   
     else {
-      matrix[xApple][yApple] = 1; 
+      change(xApple, yApple, 1);
     }
   }
 
   void tryRespawnApple() {
-    int xNewApple = random(matrixBigSize - 2) + 1; 
-    int yNewApple = random(matrixBigSize - 2) + 1; 
+    byte xNewApple = random(matrixBigSize - 2) + 1; 
+    byte yNewApple = random(matrixBigSize - 2) + 1; 
   
     if (xNewApple == xApple && yNewApple == yApple) {
       return;
@@ -247,8 +146,8 @@ class Apple {
     
     xApple = xNewApple; 
     yApple = yNewApple; 
-  
-    matrix[xApple][yApple] = 1; 
+
+    change(xApple, yApple, 1);
   
     toUpdateApple = false; 
   }
@@ -263,20 +162,20 @@ class Player {
   public:
 
   void blinkPlayer() {
-  
-    matrix[xPos][yPos] = 1; 
+
+    change(xPos, yPos, 1);
     if (millis() - myLastMove > blinkIntervalStaying) {
       if (millis() % 500 < 50) {
-        matrix[xPos][yPos] = 0; 
+        change(xPos, yPos, 0);
       }
   
       else {
-        matrix[xPos][yPos] = 1;
+        change(xPos, yPos, 1);
       }
     }
   }
 
-  void updatePlayerOnDisplay(int x, int y) {
+  void updatePlayerOnDisplay(byte &x, byte &y) {
 
     if (millis() - lastTimeUpdatePlayer > blinkIntervalStaying) {
       stayedSeconds += (millis() - lastTimeUpdatePlayer) / 1000; 
@@ -285,10 +184,10 @@ class Player {
     lastTimeUpdatePlayer = millis();
     
     if (displayMovementType == 0) {
-      xStartDisplay = (int) (x / matrixSize) * matrixSize;  
-      xEndDisplay = ((int) (x / matrixSize) + 1) * matrixSize - 1;
-      yStartDisplay = (int) (y / matrixSize) * matrixSize;  
-      yEndDisplay = ((int) (y / matrixSize) + 1) * matrixSize - 1;
+      xStartDisplay = (byte) (x / matrixSize) * matrixSize;  
+      xEndDisplay = ((byte) (x / matrixSize) + 1) * matrixSize - 1;
+      yStartDisplay = (byte) (y / matrixSize) * matrixSize;  
+      yEndDisplay = ((byte) (y / matrixSize) + 1) * matrixSize - 1;
     }
     
     else {
@@ -304,7 +203,7 @@ class Player {
     }  
   }
 
-  void updatePlayer() {
+  void updatePlayer(LiquidCrystal &lcd, bool &firstTimeHere, bool &onVolume) {
     int xValue = analogRead(xPin);
     int yValue = analogRead(yPin);
     
@@ -342,20 +241,42 @@ class Player {
     if (xLastPos != xPos || yLastPos != yPos) {
       if (xPos == xApple && yPos == yApple) {
         ++collectedApples; 
+        if (onVolume == true) {
+          tone(buzzerPin, eatSound, 50);
+        }
         toUpdateApple = true; 
-        matrix[xApple][yApple] = 0;
+        change(xApple, yApple, 0);
         appleObject.tryRespawnApple();
       }
   
       for (int i = 0; i < numberOfKillers; ++i) {
         if (killers[i].x == xPos && killers[i].y == yPos) {
-          endedGame = true; 
+          --numberOfLifes;
+          if (onVolume == true) {
+            tone(buzzerPin, dieSound, 50);
+          }
+          if (numberOfLifes == 0) {
+            endedGame = true; 
+            firstTimeHere = true; 
+          }
+          lcd.setCursor(12, 0);
+          lcd.print(numberOfLifes);
+          if (numberOfLifes == 1) {
+            ++numberOfPowers;
+            startPowerTime = millis();
+            doButtonGame = true; 
+            lastColorPowerChange = millis();
+            xPos = 1; 
+            yPos = 1;
+            updatePlayerOnDisplay(xPos, yPos);
+          }
         }
       }
       
       myLastMove = millis();  
-      matrix[xPos][yPos] = 1;
-      matrix[xLastPos][yLastPos] = 0;
+
+      change(xPos, yPos, 1);
+      change(xLastPos, yLastPos, 0);
     }
   }
   
@@ -369,8 +290,8 @@ class Wall {
   public:
 
   void tryGenerateWall() {
-    int xNewWall = random(matrixBigSize - 2) + 1;
-    int yNewWall = random(matrixBigSize - 2) + 1;
+    byte xNewWall = random(matrixBigSize - 2) + 1;
+    byte yNewWall = random(matrixBigSize - 2) + 1;
   
     if (xNewWall == xPos && yNewWall == yPos) {
       return; 
@@ -378,6 +299,10 @@ class Wall {
   
     if (xNewWall == xApple && yNewWall == yApple) {
       return;
+    }
+
+    if (xNewWall + yNewWall == 2) {
+      return; 
     }
   
     for (int i = 0; i < numberOfKillers; ++i) {
@@ -393,7 +318,9 @@ class Wall {
     }
   
     ++numberOfWalls; 
-    matrix[xNewWall][yNewWall] = 1; 
+    
+    change(xNewWall, yNewWall, 1); 
+    
     walls[numberOfWalls - 1].x = xNewWall; 
     walls[numberOfWalls - 1].y = yNewWall; 
     toGenerateWall = false; 
@@ -403,27 +330,185 @@ class Wall {
 
 //------------------------------------------------------------------------------------------------------------------
 
+//-KILLER CLASS-----------------------------------------------------------------------------------------------------
+
+class Killer {
+  public: 
+  
+  byte killerDistance() {
+    // aici am nevoie de o functie f(x) cu x din millis() care da valori de la 5 la 1 
+    // cam naspa de facut, deci hardcodez functia dupa bunul plac 
+    if (millis() <= 60000) {
+      return 5; 
+    }
+    else if (millis() <= 100000) {
+      return 4; 
+    }
+    else if (millis() <= 200000) {
+      return 3; 
+    }
+    else if (millis() <= 1000000) {
+      return 2; 
+    }
+    else {
+      return 1; 
+    }
+  }
+
+  void tryGenerateKiller() {
+    byte xNewKiller = xNewKiller = random(matrixBigSize - 2) + 1;
+    byte yNewKiller = yNewKiller = random(matrixBigSize - 2) + 1;
+  
+    if (xNewKiller == xApple && yNewKiller == yApple) {
+      return;
+    } 
+  
+    if (abs(xNewKiller - xPos) + abs(yNewKiller -  yPos) < killerDistance()) {
+      return; 
+    }
+
+    if (xNewKiller + yNewKiller == 2) {
+      return;
+    }
+  
+    for (byte i = 0; i < numberOfKillers; ++i) {
+      if (xNewKiller == killers[i].x && yNewKiller == killers[i].y) {
+        return; 
+      }
+    }
+  
+    if (checkNotObstacle(xNewKiller, yNewKiller) == false) {
+      return;
+    }
+  
+    ++numberOfKillers; 
+  
+    killers[numberOfKillers - 1].x = xNewKiller;
+    killers[numberOfKillers - 1].y = yNewKiller;
+
+    change(xNewKiller, yNewKiller, 1);
+
+    Serial.println(xNewKiller); 
+    toGenerateKiller = false; 
+  
+    lastKillerGenerateTime = millis();
+  }
+
+  void blinkKillers() {
+    if (millis() % 500 < 50) {
+      for (byte i = 0; i < numberOfKillers; ++i) {
+        change(killers[i].x, killers[i].y, 0);
+      }
+    }
+    else {
+      for (byte i = 0; i < numberOfKillers; ++i) {
+        change(killers[i].x, killers[i].y, 1);
+      }
+    }
+  }
+
+  void updateKillers(LiquidCrystal &lcd, bool &firstTimeHere, bool &onVolume) {
+    for (byte i = 0; i < numberOfKillers; ++i) {
+      byte directionOx = random(3) - 1;
+      byte directionOy = random(3) - 1;
+  
+      byte xNewKiller = killers[i].x + directionOx; 
+      byte yNewKiller = killers[i].y + directionOy; 
+  
+      if (checkNotObstacle(xNewKiller, yNewKiller) == true && !(xNewKiller == xApple && yNewKiller == yApple)) {
+
+        change(xNewKiller, yNewKiller, 1);
+        change(killers[i].x, killers[i].y, 0);
+        
+        killers[i].x = xNewKiller; 
+        killers[i].y = yNewKiller;
+        if (killers[i].x == xPos && killers[i].y == yPos) {
+          --numberOfLifes;
+          if (onVolume == true) {
+            tone(buzzerPin, dieSound, 50);
+          }
+          if (numberOfLifes == 0) {
+            endedGame = true; 
+            firstTimeHere = true;
+          }
+          lcd.setCursor(12, 0);
+          lcd.print(numberOfLifes);
+          if (numberOfLifes == 1) {
+            ++numberOfPowers;
+            startPowerTime = millis();
+            doButtonGame = true; 
+            lastColorPowerChange = millis();
+            xPos = 1; 
+            yPos = 1;
+            playerObject.updatePlayerOnDisplay(xPos, yPos);
+          }
+        }
+      }
+    }
+  }
+
+  void checkIfNeedUpdateKillers(LiquidCrystal &lcd, bool &firstTimeHere, bool &onVolume) {
+    int speedKiller = min(millis() / 20000 + 1, maximumKillerSpeed); 
+  
+    if (millis() - lastKillerUpdateTime > (120 - speedKiller) * 4) {
+      updateKillers(lcd, firstTimeHere, onVolume);
+      lastKillerUpdateTime = millis();
+    }
+  }
+
+} killerObject;
+
 class Game {
   public: 
   
   void boardMatrix() {
     for (int i  = 0; i < matrixBigSize; ++i) {
-      matrix[0][i] = 1;
-      matrix[matrixBigSize - 1][i] = 1; 
-      matrix[i][0] = 1;
-      matrix[i][matrixBigSize - 1] = 1;
+
+      change(0, i, 1);
+      change(matrixBigSize - 1, i, 1);
+      change(i, 0, 1);
+      change(i, matrixBigSize - 1, 1);
     }
   }
 
   void initGame() {
+    xPos = 1;
+    yPos = 1;
+    xLastPos = 1;
+    yLastPos = 1;
+    numberOfPowers = 2; 
+    numberOfLifes = 2;
+    numberOfKillers = 0;
+    collectedApples = 0;
+    stayedSeconds = 0; 
+    numberOfWalls = 0;
+    score = 0;
+    prevScore = 0; 
+    lastKillerUpdateTime = millis();
+    lastKillerGenerateTime = millis();
+    lastTimeUpdatePlayer = millis(); 
+    myLastMove = millis(); 
+    lastMoved = millis();
+    lastWallGeneratedTime = millis(); 
+    startPowerTime = millis(); 
+    lastColorPowerChange = millis();
+    whenStartedGame = millis(); 
+    toGenerateKiller = false;
+    toUpdateApple = false;
+    toGenerateWall = false; 
+    
+    for (byte i = 0; i < 24; ++i) {
+      matrix[i] = 0ll;
+    }
     boardMatrix();
     
     xApple = random(5) + 2; 
     yApple = random(5) + 1;
-    matrix[xApple][yApple] = 1;
+
+    change(xApple, yApple, 1);
   }
 
-  void runStep(const int &ledPinBlue, const int &ledPinGreen) {
+  void runStep(const int &ledPinBlue, const int &ledPinGreen, LiquidCrystal &lcd, bool &firstTimeHere, bool &onVolume) {
 
     if (doButtonGame == true && numberOfPowers > 0) {
       if (millis() - startPowerTime > powerDuration) {
@@ -446,7 +531,7 @@ class Game {
         }
         
         if (millis() - lastMoved > moveInterval) {
-          playerObject.updatePlayer();
+          playerObject.updatePlayer(lcd, firstTimeHere, onVolume);
           lastMoved = millis();
         }
 
@@ -463,14 +548,14 @@ class Game {
 
     analogWrite(ledPinGreen, appleObject.appleLedDistance());
     
-    killerObject.checkIfNeedUpdateKillers();
+    killerObject.checkIfNeedUpdateKillers(lcd, firstTimeHere, onVolume);
 
     if (millis() - lastWallGeneratedTime > generateIntervalWall) {
       toGenerateWall = true;
     }
   
     if (millis() - lastMoved > moveInterval) {
-      playerObject.updatePlayer();
+      playerObject.updatePlayer(lcd, firstTimeHere, onVolume);
       lastMoved = millis();
     }
 
