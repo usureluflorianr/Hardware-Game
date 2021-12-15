@@ -42,4 +42,8 @@ You have a room of 23x23 (the initial matrix is 24x24, but we have borders). You
 * button
 * RGB led
 
+# Setup 
+
+![setup](https://user-images.githubusercontent.com/38779396/146227300-dab52c76-5b6a-4b0e-a6f3-d6daaaf95659.jpeg)
+
 
