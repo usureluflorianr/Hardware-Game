@@ -204,29 +204,20 @@ class Button {
       else if (atScores == true) {
         if (curOy == 0 && curOx == 0) {
     
-          EEPROM.write(0, 0);
-          EEPROM.write(1, 0);
-          EEPROM.write(2, 0);
-          EEPROM.write(3, 0);
-          EEPROM.write(4, '-');
-          EEPROM.write(5, '-');
-          EEPROM.write(6, '-');
+          EEPROM.update(0, 0);
+          EEPROM.update(1, '-');
+          EEPROM.update(2, '-');
+          EEPROM.update(3, '-');
 
-          EEPROM.write(7, 0);
-          EEPROM.write(8, 0);
-          EEPROM.write(9, 0);
-          EEPROM.write(10, 0);
-          EEPROM.write(11, '-');
-          EEPROM.write(12, '-');
-          EEPROM.write(13, '-');
+          EEPROM.update(4, 0);;
+          EEPROM.update(5, '-');
+          EEPROM.update(6, '-');
+          EEPROM.update(7, '-');
 
-          EEPROM.write(14, 0);
-          EEPROM.write(15, 0);
-          EEPROM.write(16, 0);
-          EEPROM.write(17, 0);
-          EEPROM.write(18, '-');
-          EEPROM.write(19, '-');
-          EEPROM.write(20, '-');
+          EEPROM.update(8, 0);
+          EEPROM.update(9, '-');
+          EEPROM.update(10, '-');
+          EEPROM.update(11, '-');
         }
         atMainMenu = true;
         atScores = false; 

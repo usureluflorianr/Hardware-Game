@@ -15,13 +15,27 @@
 #define lcdOy 16
 #define joystickTime 500
 #define moveSound 5000
+#define pinForRandom 0
+#define PinRS 13
+#define PinE 9
+#define D4 A2
+#define D5 4
+#define D6 A3
+#define D7 8
+
+/* 
+ *  For EEPROM:
+ *  - from 0 to 11, we keep the details for highscore (name and score for top 3)
+ *  - each of these is being keept in buckets of 4 EEPROM bytes
+ *  - 1st byte from the bucket is the score and the following 3 are for each char in the name  
+ */
 
 unsigned int long long lastTimeJoystickMove = 0;
 bool didJoystickMove = false;
 
 const String gameTitle = "Usu The Game";
 
-LiquidCrystal lcd(13, 9, A2, 4, A3, 8);
+LiquidCrystal lcd(PinRS, PinE, D4, D5, D6, D7);
 LedControl lc = LedControl(dinPin, clockPin, loadPin, 1); //DIN, CLK, LOAD, No. DRIVER 
 
 void setup() {
@@ -40,7 +54,7 @@ void setup() {
   lcd.setCursor((lcdOy - gameTitle.length()) / 2, 0); 
   lcd.print("Usu The Game");
   
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(pinForRandom));
   gameObject.initGame();
   
   lc.shutdown(0, false); // turn off power saving, enables display
@@ -49,12 +63,18 @@ void setup() {
   
   
   change(xPos, yPos, 1);
+  
+  lvlBright = EEPROM.read(eprByteBright);
+  lvlContrast = EEPROM.read(eprByteContrast); 
+  lvlLeds = EEPROM.read(eprByteLeds); 
+  onVolume = (1 == EEPROM.read(eprByteVolume));
 
   analogWrite(contrastPin, lvlContrast * contrastIncrement);
   analogWrite(backLedPin, lvlBright * brightIncrement);
 }
 
 void loop() {
+  Serial.println(curOx);
  
   buttonObject.doButtons(lc, firstTimeHere, lcd);
 
@@ -91,108 +111,81 @@ void updateHighscore(int &score) {
 
   bool existed = false;
   int scoreEpr = 0;
-  if (nameChar1 == EEPROM.read(4) && nameChar2 == EEPROM.read(5) && nameChar3 == EEPROM.read(6)) {
-    scoreEpr = EEPROM.read(0) * 1000 + EEPROM.read(1) * 100 + EEPROM.read(2) * 10 + EEPROM.read(3);
+  if (nameChar1 == EEPROM.read(1) && nameChar2 == EEPROM.read(2) && nameChar3 == EEPROM.read(3)) {
+    scoreEpr = EEPROM.read(0);
     if (score > scoreEpr) {
-      EEPROM.write(0, score / 1000 % 10);
-      EEPROM.write(1, score / 100 % 10);
-      EEPROM.write(2, score / 10 % 10);
-      EEPROM.write(3, score % 10);
+      EEPROM.update(0, score);
     }
     else return;
     existed = true; 
   }
 
-  else if (nameChar1 == EEPROM.read(11) && nameChar2 == EEPROM.read(12) && nameChar3 == EEPROM.read(13)) {
-    scoreEpr = EEPROM.read(7) * 1000 + EEPROM.read(8) * 100 + EEPROM.read(9) * 10 + EEPROM.read(10);
+  else if (nameChar1 == EEPROM.read(5) && nameChar2 == EEPROM.read(6) && nameChar3 == EEPROM.read(7)) {
+    scoreEpr = EEPROM.read(4);
     if (score > scoreEpr) {
-      EEPROM.write(7, score / 1000 % 10);
-      EEPROM.write(8, score / 100 % 10);
-      EEPROM.write(9, score / 10 % 10);
-      EEPROM.write(10, score % 10);
+      EEPROM.update(4, score);
     }
     else return;
     existed = true; 
   }
 
-  else if (nameChar1 == EEPROM.read(18) && nameChar2 == EEPROM.read(19) && nameChar3 == EEPROM.read(20)) {
-    scoreEpr = EEPROM.read(14) * 1000 + EEPROM.read(15) * 100 + EEPROM.read(16) * 10 + EEPROM.read(17);
+  else if (nameChar1 == EEPROM.read(9) && nameChar2 == EEPROM.read(10) && nameChar3 == EEPROM.read(11)) {
+    scoreEpr = EEPROM.read(8);
     if (score > scoreEpr) {
-      EEPROM.write(14, score / 1000 % 10);
-      EEPROM.write(15, score / 100 % 10);
-      EEPROM.write(16, score / 10 % 10);
-      EEPROM.write(17, score % 10);
+      EEPROM.update(8, score);
     }
     else return;
     existed = true; 
   }
 
-  scoreEpr = EEPROM.read(14) * 1000 + EEPROM.read(15) * 100 + EEPROM.read(16) * 10 + EEPROM.read(17);
+  scoreEpr = EEPROM.read(8);
   if (score > scoreEpr && existed == false) {
-      EEPROM.write(14, score / 1000 % 10);
-      EEPROM.write(15, score / 100 % 10);
-      EEPROM.write(16, score / 10 % 10);
-      EEPROM.write(17, score % 10);
-
-      EEPROM.write(18, nameChar1);
-      EEPROM.write(19, nameChar2); 
-      EEPROM.write(20, nameChar3);  
+      EEPROM.update(8, score);
+      EEPROM.update(9, nameChar1);
+      EEPROM.update(10, nameChar2); 
+      EEPROM.update(11, nameChar3);  
   }
 
   int scoreEprHigh = 0;
 
-  scoreEpr = EEPROM.read(14) * 1000 + EEPROM.read(15) * 100 + EEPROM.read(16) * 10 + EEPROM.read(17);
-  scoreEprHigh = EEPROM.read(7) * 1000 + EEPROM.read(8) * 100 + EEPROM.read(9) * 10 + EEPROM.read(10);
+  scoreEpr = EEPROM.read(8);
+  scoreEprHigh = EEPROM.read(4);
 
   if (scoreEpr > scoreEprHigh) {
-    EEPROM.write(14, scoreEprHigh / 1000 % 10);
-    EEPROM.write(15, scoreEprHigh / 100 % 10);
-    EEPROM.write(16, scoreEprHigh / 10 % 10);
-    EEPROM.write(17, scoreEprHigh % 10);
-
-    EEPROM.write(7, scoreEpr / 1000 % 10);
-    EEPROM.write(8, scoreEpr / 100 % 10);
-    EEPROM.write(9, scoreEpr / 10 % 10);
-    EEPROM.write(10, scoreEpr % 10);
+    EEPROM.update(8, scoreEprHigh);
+    EEPROM.update(4, scoreEpr);
   
-    nameChar1 = EEPROM.read(18);
-    nameChar2 = EEPROM.read(19);
-    nameChar3 = EEPROM.read(20);
+    nameChar1 = EEPROM.read(9);
+    nameChar2 = EEPROM.read(10);
+    nameChar3 = EEPROM.read(11);
 
-    EEPROM.write(18, EEPROM.read(11));
-    EEPROM.write(19, EEPROM.read(12));
-    EEPROM.write(20, EEPROM.read(13));
+    EEPROM.update(9, EEPROM.read(5));
+    EEPROM.update(10, EEPROM.read(6));
+    EEPROM.update(11, EEPROM.read(7));
 
-    EEPROM.write(11, nameChar1);
-    EEPROM.write(12, nameChar2);
-    EEPROM.write(13, nameChar3);
+    EEPROM.update(5, nameChar1);
+    EEPROM.update(6, nameChar2);
+    EEPROM.update(7, nameChar3);
   }
 
-  scoreEpr = EEPROM.read(7) * 1000 + EEPROM.read(8) * 100 + EEPROM.read(9) * 10 + EEPROM.read(10);
-  scoreEprHigh = EEPROM.read(0) * 1000 + EEPROM.read(1) * 100 + EEPROM.read(2) * 10 + EEPROM.read(3);
+  scoreEpr = EEPROM.read(4);
+  scoreEprHigh = EEPROM.read(0);
 
   if (scoreEpr > scoreEprHigh) {
-    EEPROM.write(7, scoreEprHigh / 1000 % 10);
-    EEPROM.write(8, scoreEprHigh / 100 % 10);
-    EEPROM.write(9, scoreEprHigh / 10 % 10);
-    EEPROM.write(10, scoreEprHigh % 10);
-
-    EEPROM.write(0, scoreEpr / 1000 % 10);
-    EEPROM.write(1, scoreEpr / 100 % 10);
-    EEPROM.write(2, scoreEpr / 10 % 10);
-    EEPROM.write(3, scoreEpr % 10);
+    EEPROM.update(4, scoreEprHigh);
+    EEPROM.update(0, scoreEpr);
   
-    nameChar1 = EEPROM.read(11);
-    nameChar2 = EEPROM.read(12);
-    nameChar3 = EEPROM.read(13);
+    nameChar1 = EEPROM.read(5);
+    nameChar2 = EEPROM.read(6);
+    nameChar3 = EEPROM.read(7);
 
-    EEPROM.write(11, EEPROM.read(4));
-    EEPROM.write(12, EEPROM.read(5));
-    EEPROM.write(13, EEPROM.read(6));
+    EEPROM.update(5, EEPROM.read(1));
+    EEPROM.update(6, EEPROM.read(2));
+    EEPROM.update(7, EEPROM.read(3));
 
-    EEPROM.write(4, nameChar1);
-    EEPROM.write(5, nameChar2);
-    EEPROM.write(6, nameChar3);
+    EEPROM.update(1, nameChar1);
+    EEPROM.update(2, nameChar2);
+    EEPROM.update(3, nameChar3);
   }
 }
 
@@ -225,13 +218,11 @@ void hereInGame() {
         lcd.print(nameChar3);
         lcd.print("! "); 
 
-        if (score == EEPROM.read(0) * 1000 + EEPROM.read(1) * 100 + EEPROM.read(2) * 10 + EEPROM.read(3)) {
-          if (nameChar1 == EEPROM.read(4) && nameChar2 == EEPROM.read(5) && nameChar3 == EEPROM.read(6)) {
-            lcd.setCursor(0, 0);
-            lcd.print("                ");
-            lcd.setCursor(0, 0);
-            lcd.print(" New highscore! ");
-          }
+        if (score > EEPROM.read(0)) {
+          lcd.setCursor(0, 0);
+          lcd.print("                ");
+          lcd.setCursor(0, 0);
+          lcd.print(" New highscore! ");
         }
 
         updateHighscore(score); 
@@ -303,7 +294,7 @@ void hereMoveJoyStick() {
   if (xValue < minThreshold) {  
     if (millis() - lastTimeJoystickMove > joystickTime) {
       if (onVolume == true && inGame == false) {
-        tone(buzzerPin, moveSound, 50);
+        tone(buzzerPin, moveSound, toneTime);
       }
       --curOx;
       --dirOx;
@@ -314,7 +305,7 @@ void hereMoveJoyStick() {
   else if (xValue > maxThreshold) {  
     if (millis() - lastTimeJoystickMove > joystickTime) {
       if (onVolume == true && inGame == false) {
-        tone(buzzerPin, moveSound, 50);
+        tone(buzzerPin, moveSound, toneTime);
       }
       ++curOx;
       ++dirOx; 
@@ -325,7 +316,7 @@ void hereMoveJoyStick() {
   else if (yValue < minThreshold) {  
     if (millis() - lastTimeJoystickMove > joystickTime) {
       if (onVolume == true && inGame == false) {
-        tone(buzzerPin, moveSound, 50);
+        tone(buzzerPin, moveSound, toneTime);
       }
       --curOy;
       --dirOy;
@@ -336,7 +327,7 @@ void hereMoveJoyStick() {
   else if (yValue > maxThreshold) {  
    if (millis() - lastTimeJoystickMove > joystickTime) {
       if (onVolume == true && inGame == false) {
-        tone(buzzerPin, moveSound, 50);
+        tone(buzzerPin, moveSound, toneTime);
       }
       ++curOy;
       ++dirOy;
@@ -352,7 +343,7 @@ void hereAtMenu() {
   if (atPromo == true) {
     if (millis() - lastTimeScrolledText > scrollInterval) {
       lastTimeScrolledText = millis(); 
-      atPromo = menuObject.doPromo(lcd);
+      atPromo = menuObject.doPromo(lcd, actualPozPromo, promoText);
       atMainMenu = atPromo xor 1;  
     }
      
@@ -364,6 +355,8 @@ void hereAtMenu() {
     menuObject.doMainMenu(lcd);
     buttonObject.promoLeds(lc);
     if (firstTimeHere == true) {
+      digitalWrite(ledPinBlue, false);
+      analogWrite(ledPinGreen, minValueLed);
       menuObject.init(lcd);
       firstTimeHere = false; 
     } 
@@ -375,6 +368,11 @@ void hereAtMenu() {
       menuObject.doAbout(lcd); 
       printMatrix(aboutMenuImage);
       return;
+    }
+    if (millis() - lastTimeScrolledText > scrollInterval) {
+      lastTimeScrolledText = millis(); 
+      menuObject.doPromo(lcd, actualPozAbout, aboutText);
+      actualPozAbout = actualPozAbout % aboutText.length();
     }
     return; 
   }

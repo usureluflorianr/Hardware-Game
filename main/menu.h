@@ -13,8 +13,24 @@
 #define buzzerPin 7
 #define promoOddTimeSound 500
 #define promoEvenTimeSound 1000
+#define settingsOxModulo 4
+#define highscoreOyModulo 3 
+#define highscoreOxModulo 2
+#define typeGameOxModulo 2
+#define typeGameOyModulo 2
+#define selectNameOxModulo 2
+#define selectNameOyModulo 4
+#define menuOxModulo 2
+#define menuOyModulo 4
+#define toneTime 50
+#define eprByteBright 12
+#define eprByteContrast 13
+#define eprByteLeds 14
+#define eprByteVolume 15
 
-byte actualPoz = 0;   
+
+byte actualPozPromo = 0;   
+byte actualPozAbout = 0; 
 short dirOx = 0;
 short dirOy = 0; 
 
@@ -42,6 +58,7 @@ char nameChar3 = 'U';
 unsigned int long long lastTimeScrolledText = 0;
 
 const String promoText = "Story: life is short. Collect stories to be happy and as fast as you can, because walls will appear and many to stop you!.....";
+const String aboutText = "GitHub: usureluflorianr ";
 
 class Menu {
   public:
@@ -57,23 +74,23 @@ class Menu {
     lcd.createChar(8, fullRect);
   }
 
-  bool doPromo(LiquidCrystal &lcd) {
+  bool doPromo(LiquidCrystal &lcd, byte &actualPoz, String textToShow) {
     lcd.setCursor(0, 1);
-    lcd.print(promoText.substring(actualPoz, actualPoz + lastEndLCD));
+    lcd.print(textToShow.substring(actualPoz, actualPoz + lastEndLCD));
     
     actualPoz++;
 
     if (onVolume == true) {
       if (actualPoz % 2) {
-        tone(buzzerPin, promoOddTimeSound, 50);
+        tone(buzzerPin, promoOddTimeSound, toneTime);
       }
 
       else {
-        tone(buzzerPin, promoEvenTimeSound, 50);
+        tone(buzzerPin, promoEvenTimeSound, toneTime);
       }
     }
     
-    if ((actualPoz + lastEndLCD - 1) == (promoText.length() - 1)) {
+    if ((actualPoz + lastEndLCD - 1) == (textToShow.length() - 1)) {
       return false;
     }
     return true;
@@ -98,13 +115,13 @@ class Menu {
     }
 
     if (curOx == -1) {
-      curOx = 1; 
+      curOx = menuOxModulo - 1; 
     }
-    curOx %= 2;
+    curOx %= menuOxModulo;
     if (curOy == -1) {
-      curOy = 3; 
+      curOy = menuOyModulo - 1; 
     }
-    curOy %= 4; 
+    curOy %= menuOyModulo; 
 
     if (curOy == 0) {
       lcd.setCursor(4, 1);
@@ -136,19 +153,21 @@ class Menu {
       lcd.setCursor(12, 0);
       lcd.print("BACK");
       lcd.setCursor(1, 1);
-      lcd.print("YT: Usu The Man");
+      actualPozPromo = 0; 
+      //lcd.print("GIT: usureluflorianr");
     }
   }
 
   void doSelectName(LiquidCrystal &lcd) {
+
     if (curOx == -1) {
-      curOx = 1; 
+      curOx = selectNameOxModulo - 1; 
     }
-    curOx %= 2;
+    curOx %= selectNameOxModulo;
     if (curOy == -1) {
-      curOy = 3; 
+      curOy = selectNameOyModulo - 1; 
     }
-    curOy %= 4;
+    curOy %= selectNameOyModulo;
     
     if (firstTimeHere == true) {
       curOx = 1; 
@@ -319,31 +338,34 @@ class Menu {
     
     if (startPoz == 0)
       lcd.print(1); 
-    else if (startPoz == 7) 
+    else if (startPoz == 4) 
       lcd.print(2);
     else 
       lcd.print(3); 
     
     lcd.print(": ");
-    lcd.print((char)EEPROM.read(startPoz + 4));
-    lcd.print((char)EEPROM.read(startPoz + 5));
-    lcd.print((char)EEPROM.read(startPoz + 6));
+    lcd.print((char)EEPROM.read(startPoz + 1));
+    lcd.print((char)EEPROM.read(startPoz + 2));
+    lcd.print((char)EEPROM.read(startPoz + 3));
     lcd.print(" "); 
-    lcd.print(EEPROM.read(startPoz + 0));
-    lcd.print(EEPROM.read(startPoz + 1));
-    lcd.print(EEPROM.read(startPoz + 2));
-    lcd.print(EEPROM.read(startPoz + 3));
+    byte topScore = EEPROM.read(startPoz); 
+
+    // we extract each digit of the highscore with leading 0s
+    lcd.print(topScore / 100 % 10);
+    lcd.print(topScore / 10 % 10);
+    lcd.print(topScore  % 10);
   }
 
   void doTypeGame(LiquidCrystal &lcd, byte &displayMovementType) {
+
     if (curOx == -1) {
-      curOx = 1; 
+      curOx = typeGameOxModulo - 1; 
     }
-    curOx %= 2;
+    curOx %= typeGameOxModulo;
     if (curOy == -1) {
-      curOy = 1; 
+      curOy = typeGameOyModulo - 1; 
     }
-    curOy %= 2;
+    curOy %= typeGameOyModulo;
     
     if (firstTimeHere == true) {
       curOx = 1; 
@@ -402,14 +424,15 @@ class Menu {
   }
 
   void doHighscore(LiquidCrystal &lcd) {
+    
     if (curOy == -1) {
-      curOy = 2; 
+      curOy = highscoreOyModulo - 1; 
     }
-    curOy %= 3;
+    curOy %= highscoreOyModulo;
     if (curOx == -1) {
-      curOx = 1; 
+      curOx = highscoreOxModulo - 1; 
     }
-    curOx %= 2;
+    curOx %= highscoreOxModulo;
 
     if (firstTimeHere == true) {
       curOy = 0; 
@@ -439,10 +462,10 @@ class Menu {
           printScoresFromEEPROM(lcd, 0);
         }
         else if (curOy == 1) {
-          printScoresFromEEPROM(lcd, 7);
+          printScoresFromEEPROM(lcd, 4);
         }
         else {
-          printScoresFromEEPROM(lcd, 14);
+          printScoresFromEEPROM(lcd, 8);
         }
       }
 
@@ -502,6 +525,7 @@ class Menu {
         else {
           lvlBright = min(5, lvlBright + 1); 
         }
+        EEPROM.update(eprByteBright, lvlBright);
         analogWrite(backLedPin, lvlBright * brightIncrement);
         lcd.setCursor(5, 0);
         lcd.print("     ");
@@ -518,6 +542,7 @@ class Menu {
         else {
           lvlContrast = min(5, lvlContrast + 1); 
         }
+        EEPROM.update(eprByteContrast, lvlContrast);
         analogWrite(contrastPin, lvlContrast * contrastIncrement);
         lcd.setCursor(5, 0);
         lcd.print("     ");
@@ -534,6 +559,7 @@ class Menu {
         else {
           lvlLeds = min(5, lvlLeds + 1); 
         }
+        EEPROM.update(eprByteLeds, lvlLeds);
         lc.setIntensity(0, lvlLeds * ledsIncrement);
         lcd.setCursor(5, 0);
         lcd.print("     ");
@@ -544,7 +570,8 @@ class Menu {
       }
 
       else if (curOx == 3) {
-        onVolume = !onVolume; 
+        onVolume = !onVolume;
+        EEPROM.update(eprByteVolume, onVolume); 
         lcd.setCursor(4, 0);
         lcd.print("        ");
         lcd.setCursor(4, 0); 
@@ -560,7 +587,7 @@ class Menu {
     }
 
     if (dirOx != 0) {
-      curOx = (curOx + dirOx + 3) % 4; 
+      curOx = (curOx + dirOx + (settingsOxModulo - 1)) % settingsOxModulo; 
       dirOx = 0; 
       if (curOx == 0) {
         lcd.setCursor(3, 1);

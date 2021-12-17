@@ -78,7 +78,7 @@ byte endedGameImage[matrixSize] = {
   B00111100
 };
 
-byte arrowRight[8] = {
+byte arrowRight[matrixSize] = {
   B00000, 
   B00100, 
   B00110,
@@ -89,7 +89,7 @@ byte arrowRight[8] = {
   B00000 
 };
 
-byte arrowLeft[8] = {
+byte arrowLeft[matrixSize] = {
   B00000, 
   B00100, 
   B01100,
@@ -100,7 +100,7 @@ byte arrowLeft[8] = {
   B00000 
 };
 
-byte arrowDown[8] = {
+byte arrowDown[matrixSize] = {
   B00000, 
   B00100, 
   B00100,
@@ -111,7 +111,7 @@ byte arrowDown[8] = {
   B00000 
 };
 
-byte arrowUp[8] = {
+byte arrowUp[matrixSize] = {
   B00000, 
   B00100, 
   B01110,
@@ -122,7 +122,7 @@ byte arrowUp[8] = {
   B00000 
 };
 
-byte circle[8] = {
+byte circle[matrixSize] = {
   B00000, 
   B00100, 
   B01110,
@@ -133,7 +133,7 @@ byte circle[8] = {
   B00000 
 };
 
-byte heart[8] = {
+byte heart[matrixSize] = {
   B00000, 
   B11011, 
   B11111,
@@ -144,7 +144,7 @@ byte heart[8] = {
   B00000 
 };
 
-byte power[8] = {
+byte power[matrixSize] = {
   B00000, 
   B01001, 
   B10101,
@@ -155,7 +155,7 @@ byte power[8] = {
   B01110 
 };
 
-byte fullRect[8] = {
+byte fullRect[matrixSize] = {
   B11111, 
   B11111, 
   B11111,
@@ -166,7 +166,7 @@ byte fullRect[8] = {
   B11111 
 };
 
-byte setRight[8] = {
+byte setRight[matrixSize] = {
   B11000, 
   B11100, 
   B11110,
@@ -177,7 +177,7 @@ byte setRight[8] = {
   B10000 
 };
 
-byte setLeft[8] = {
+byte setLeft[matrixSize] = {
   B00011, 
   B00111, 
   B01111,
